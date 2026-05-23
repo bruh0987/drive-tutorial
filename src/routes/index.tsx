@@ -12,7 +12,7 @@ import {
     Upload,
     HardDrive,
 } from "lucide-react";
-import { driveRoot, findPath, type DriveNode } from "@/lib/mock-drive";
+import { type File, mockFiles } from "@/lib/mock-drive";
 
 export const Route = createFileRoute("/")({
     component: Drive,
@@ -28,31 +28,34 @@ export const Route = createFileRoute("/")({
     }),
 });
 
-function nodeIcon(node: DriveNode) {
+function nodeIcon(file: File) {
     const base = "h-4 w-4 shrink-0";
-    if (node.type === "folder")
+    if (file.type === "folder")
         return (
             <Folder className={base} style={{ color: "var(--color-folder)" }} />
         );
-    if (node.type === "image")
+
+    const extension = file.name.split(".").pop()?.toLowerCase();
+
+    if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(extension || ""))
         return (
             <ImageIcon
                 className={base}
                 style={{ color: "var(--color-file-img)" }}
             />
         );
-    if (node.type === "video")
+    if (["mp4", "mov", "webm", "avi"].includes(extension || ""))
         return (
             <Film className={base} style={{ color: "var(--color-file-vid)" }} />
         );
-    if (node.type === "zip")
+    if (["zip", "rar", "7z", "tar", "gz"].includes(extension || ""))
         return (
             <Archive
                 className={base}
                 style={{ color: "var(--color-file-zip)" }}
             />
         );
-    if (node.type === "pdf")
+    if (extension === "pdf")
         return (
             <FileType
                 className={base}
@@ -65,26 +68,43 @@ function nodeIcon(node: DriveNode) {
 }
 
 function Drive() {
-    const [currentId, setCurrentId] = useState<string>("root");
+    const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [query, setQuery] = useState("");
 
-    const path = useMemo(
-        () => findPath(driveRoot, currentId) ?? [driveRoot],
-        [currentId],
-    );
-    const current = path[path.length - 1];
-    const items =
-        current.type === "folder"
-            ? [...current.children]
-                  .filter((c) =>
-                      c.name.toLowerCase().includes(query.toLowerCase()),
-                  )
-                  .sort((a, b) => {
-                      if (a.type === "folder" && b.type !== "folder") return -1;
-                      if (a.type !== "folder" && b.type === "folder") return 1;
-                      return a.name.localeCompare(b.name);
-                  })
-            : [];
+    const currentFiles = useMemo(() => {
+        if (query.trim()) {
+            return mockFiles.filter((file) =>
+                file.name.toLowerCase().includes(query.toLowerCase()),
+            );
+        }
+        return mockFiles.filter((file) => file.parent === currentFolder);
+    }, [currentFolder, query]);
+
+    const handleFolderClick = (folderId: string | null) => {
+        setCurrentFolder(folderId);
+        setQuery(""); // Clear search when navigating
+    };
+
+    const breadcrumbs = useMemo(() => {
+        const path: File[] = [];
+        let currentId = currentFolder;
+
+        while (currentId !== null) {
+            const folder = mockFiles.find((file) => file.id === currentId);
+            if (folder) {
+                path.unshift(folder);
+                currentId = folder.parent;
+            } else {
+                break;
+            }
+        }
+
+        return path;
+    }, [currentFolder]);
+
+    const handleUpload = () => {
+        alert("Upload functionality would be implemented here");
+    };
 
     return (
         <div className="dark min-h-screen bg-background text-foreground">
@@ -110,22 +130,39 @@ function Drive() {
                             />
                         </div>
                         <StorageMeter />
-                        <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-accent transition-colors">
+                        <button
+                            onClick={handleUpload}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-accent transition-colors"
+                        >
                             <Upload className="h-4 w-4" /> Upload
                         </button>
                     </div>
 
                     {/* Breadcrumbs */}
                     <nav className="px-6 pb-3 flex items-center gap-1 text-sm text-muted-foreground overflow-x-auto">
-                        {path.map((node, i) => {
-                            const last = i === path.length - 1;
+                        <button
+                            onClick={() => handleFolderClick(null)}
+                            className={
+                                "px-2 py-1 rounded-md hover:bg-accent transition-colors " +
+                                (!currentFolder ? "text-foreground font-medium" : "")
+                            }
+                        >
+                            All Files
+                        </button>
+                        {breadcrumbs.length > 0 && (
+                            <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+                        )}
+                        {breadcrumbs.map((folder, index) => {
+                            const last = index === breadcrumbs.length - 1;
                             return (
                                 <span
-                                    key={node.id}
+                                    key={folder.id}
                                     className="flex items-center gap-1"
                                 >
                                     <button
-                                        onClick={() => setCurrentId(node.id)}
+                                        onClick={() =>
+                                            handleFolderClick(folder.id)
+                                        }
                                         className={
                                             "px-2 py-1 rounded-md hover:bg-accent transition-colors " +
                                             (last
@@ -133,7 +170,7 @@ function Drive() {
                                                 : "")
                                         }
                                     >
-                                        {node.name}
+                                        {folder.name}
                                     </button>
                                     {!last && (
                                         <ChevronRight className="h-3.5 w-3.5 opacity-60" />
@@ -146,12 +183,15 @@ function Drive() {
 
                 {/* Content */}
                 <div className="px-6 py-6">
-                    {items.length === 0 ? (
+                    {currentFiles.length === 0 ? (
                         <div className="text-center text-muted-foreground py-24 text-sm">
-                            This folder is empty.
+                            {query ? "No results found." : "This folder is empty."}
                         </div>
                     ) : (
-                        <Section items={items} onOpen={setCurrentId} />
+                        <Section
+                            files={currentFiles}
+                            onOpen={handleFolderClick}
+                        />
                     )}
                 </div>
             </main>
@@ -171,11 +211,11 @@ function StorageMeter() {
 }
 
 function Section({
-    items,
+    files,
     onOpen,
 }: {
-    items: DriveNode[];
-    onOpen: (id: string) => void;
+    files: File[];
+    onOpen: (id: string | null) => void;
 }) {
     return (
         <section className="mb-8">
@@ -186,25 +226,29 @@ function Section({
                     <span className="hidden sm:block text-right">Size</span>
                 </div>
                 <ul>
-                    {items.map((node) => (
-                        <li key={node.id}>
+                    {files.map((file) => (
+                        <li key={file.id}>
                             <button
-                                onClick={() =>
-                                    node.type === "folder" && onOpen(node.id)
-                                }
+                                onClick={() => {
+                                    if (file.type === "folder") {
+                                        onOpen(file.id);
+                                    } else if (file.url) {
+                                        window.open(file.url, "_blank");
+                                    }
+                                }}
                                 className="w-full grid grid-cols-[1fr_140px_120px] items-center px-4 py-2.5 text-sm hover:bg-accent/50 transition-colors text-left border-b border-border last:border-0"
                             >
                                 <span className="flex items-center gap-3 min-w-0">
-                                    {nodeIcon(node)}
+                                    {nodeIcon(file)}
                                     <span className="truncate">
-                                        {node.name}
+                                        {file.name}
                                     </span>
                                 </span>
                                 <span className="hidden sm:block text-muted-foreground text-xs">
-                                    {node.modified}
+                                    May 23, 2026
                                 </span>
                                 <span className="hidden sm:block text-muted-foreground text-xs text-right">
-                                    {node.type === "folder" ? "—" : node.size}
+                                    {file.type === "folder" ? "—" : file.size}
                                 </span>
                             </button>
                         </li>
@@ -214,3 +258,4 @@ function Section({
         </section>
     );
 }
+

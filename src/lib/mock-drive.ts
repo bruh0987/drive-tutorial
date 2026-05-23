@@ -1,161 +1,63 @@
-export type DriveNode =
-    | {
-          id: string;
-          name: string;
-          type: "folder";
-          modified: string;
-          children: DriveNode[];
-      }
-    | {
-          id: string;
-          name: string;
-          type: "doc" | "image" | "video" | "zip" | "pdf";
-          size: string;
-          modified: string;
-      };
-
-export const driveRoot: DriveNode = {
-    id: "root",
-    name: "My Drive",
-    type: "folder",
-    modified: "—",
-    children: [
-        {
-            id: "work",
-            name: "Work",
-            type: "folder",
-            modified: "May 18, 2026",
-            children: [
-                {
-                    id: "projects",
-                    name: "Projects",
-                    type: "folder",
-                    modified: "May 20, 2026",
-                    children: [
-                        {
-                            id: "spec",
-                            name: "Q3 Roadmap.pdf",
-                            type: "pdf",
-                            size: "1.2 MB",
-                            modified: "May 20, 2026",
-                        },
-                        {
-                            id: "design",
-                            name: "Design System.doc",
-                            type: "doc",
-                            size: "340 KB",
-                            modified: "May 19, 2026",
-                        },
-                        {
-                            id: "assets",
-                            name: "Assets",
-                            type: "folder",
-                            modified: "May 12, 2026",
-                            children: [
-                                {
-                                    id: "hero",
-                                    name: "hero-banner.png",
-                                    type: "image",
-                                    size: "2.4 MB",
-                                    modified: "May 10, 2026",
-                                },
-                                {
-                                    id: "logo",
-                                    name: "logo.svg",
-                                    type: "image",
-                                    size: "12 KB",
-                                    modified: "May 09, 2026",
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    id: "notes",
-                    name: "Meeting Notes.doc",
-                    type: "doc",
-                    size: "82 KB",
-                    modified: "May 15, 2026",
-                },
-                {
-                    id: "budget",
-                    name: "Budget 2026.doc",
-                    type: "doc",
-                    size: "210 KB",
-                    modified: "May 02, 2026",
-                },
-            ],
-        },
-        {
-            id: "personal",
-            name: "Personal",
-            type: "folder",
-            modified: "Apr 28, 2026",
-            children: [
-                {
-                    id: "photos",
-                    name: "Photos",
-                    type: "folder",
-                    modified: "Apr 24, 2026",
-                    children: [
-                        {
-                            id: "iceland",
-                            name: "iceland.jpg",
-                            type: "image",
-                            size: "5.8 MB",
-                            modified: "Apr 24, 2026",
-                        },
-                        {
-                            id: "kyoto",
-                            name: "kyoto.jpg",
-                            type: "image",
-                            size: "4.2 MB",
-                            modified: "Apr 22, 2026",
-                        },
-                        {
-                            id: "trip",
-                            name: "trip-video.mp4",
-                            type: "video",
-                            size: "182 MB",
-                            modified: "Apr 20, 2026",
-                        },
-                    ],
-                },
-                {
-                    id: "tax",
-                    name: "Taxes.pdf",
-                    type: "pdf",
-                    size: "890 KB",
-                    modified: "Mar 11, 2026",
-                },
-            ],
-        },
-        {
-            id: "archive",
-            name: "Archive.zip",
-            type: "zip",
-            size: "1.4 GB",
-            modified: "Feb 02, 2026",
-        },
-        {
-            id: "readme",
-            name: "README.doc",
-            type: "doc",
-            size: "8 KB",
-            modified: "Jan 14, 2026",
-        },
-    ],
-};
-
-export function findPath(
-    root: DriveNode,
-    targetId: string,
-): DriveNode[] | null {
-    if (root.id === targetId) return [root];
-    if (root.type !== "folder") return null;
-    for (const child of root.children) {
-        const sub = findPath(child, targetId);
-        if (sub) return [root, ...sub];
-    }
-    return null;
+export interface File {
+    id: string;
+    name: string;
+    type: "file" | "folder";
+    url?: string;
+    parent: string | null;
+    size?: string;
 }
+
+export const mockFiles: File[] = [
+    { id: "1", name: "Documents", type: "folder", parent: null },
+    { id: "2", name: "Images", type: "folder", parent: null },
+    { id: "3", name: "Work", type: "folder", parent: null },
+    {
+        id: "4",
+        name: "Resume.pdf",
+        type: "file",
+        url: "/files/resume.pdf",
+        parent: "1",
+        size: "1.2 MB",
+    },
+    {
+        id: "5",
+        name: "Project Proposal.docx",
+        type: "file",
+        url: "/files/proposal.docx",
+        parent: "1",
+        size: "2.5 MB",
+    },
+    {
+        id: "6",
+        name: "Vacation.jpg",
+        type: "file",
+        url: "/files/vacation.jpg",
+        parent: "2",
+        size: "3.7 MB",
+    },
+    {
+        id: "7",
+        name: "Profile Picture.png",
+        type: "file",
+        url: "/files/profile.png",
+        parent: "2",
+        size: "1.8 MB",
+    },
+    { id: "8", name: "Presentations", type: "folder", parent: "3" },
+    {
+        id: "9",
+        name: "Q4 Report.pptx",
+        type: "file",
+        url: "/files/q4-report.pptx",
+        parent: "8",
+        size: "5.2 MB",
+    },
+    {
+        id: "10",
+        name: "Budget.xlsx",
+        type: "file",
+        url: "/files/budget.xlsx",
+        parent: "3",
+        size: "1.5 MB",
+    },
+];
